@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="./media/flourtrack-logo.svg" alt="FlourTrack Logo" width="520"/>
+
 # FlourTrack
 
 ### Native iPhone Arcade-Timing für virtuelles Mehl

@@ -1,0 +1,74 @@
+<svg width="1200" height="720" viewBox="0 0 1200 720" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">FlourTrack logo</title>
+  <desc id="desc">A stopwatch with a blue timing swipe and playful flour sparkle particles.</desc>
+  <defs>
+    <radialGradient id="blueGlow" cx="50%" cy="48%" r="42%">
+      <stop offset="0%" stop-color="#0077FF" stop-opacity="0.82"/>
+      <stop offset="55%" stop-color="#005DFF" stop-opacity="0.26"/>
+      <stop offset="100%" stop-color="#020617" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="swipe" x1="290" y1="350" x2="855" y2="350" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0055FF"/>
+      <stop offset="42%" stop-color="#0EA5FF"/>
+      <stop offset="62%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#0066FF"/>
+    </linearGradient>
+    <linearGradient id="text" x1="286" y1="560" x2="920" y2="560" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#07142B"/>
+      <stop offset="46%" stop-color="#0B5CFF"/>
+      <stop offset="100%" stop-color="#052053"/>
+    </linearGradient>
+    <filter id="glow" x="180" y="90" width="840" height="560" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="18" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="softShadow" x="230" y="80" width="720" height="490" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="22" stdDeviation="26" flood-color="#020617" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="720" fill="#F8FAFC"/>
+  <rect width="1200" height="720" fill="url(#blueGlow)"/>
+
+  <g filter="url(#softShadow)">
+    <path d="M612 175C715.83 175 800 259.17 800 363C800 466.83 715.83 551 612 551C508.17 551 424 466.83 424 363C424 259.17 508.17 175 612 175Z" fill="#071633" stroke="#020A1F" stroke-width="10"/>
+    <path d="M612 199C702.58 199 776 272.42 776 363C776 453.58 702.58 527 612 527C521.42 527 448 453.58 448 363C448 272.42 521.42 199 612 199Z" fill="#0B1E42"/>
+    <path d="M624 134L676 144C688.6 146.42 696.85 158.6 694.43 171.2L691.95 184.15L593.05 165.15L595.53 152.2C597.95 139.6 610.13 131.35 622.73 133.77L624 134Z" fill="#0B1E42" stroke="#020A1F" stroke-width="8"/>
+    <path d="M771 208L804 180C810.5 174.48 820.55 179.95 819.35 188.4L811.2 245.68L771 208Z" fill="#0B1E42" stroke="#020A1F" stroke-width="8"/>
+    <path d="M612 363L730 278" stroke="#0A1024" stroke-width="16" stroke-linecap="round"/>
+    <circle cx="612" cy="363" r="24" fill="#136BFF" stroke="#020A1F" stroke-width="8"/>
+    <path d="M558 225L574 260" stroke="#136BFF" stroke-opacity="0.5" stroke-width="9" stroke-linecap="round"/>
+    <path d="M628 220L620 258" stroke="#136BFF" stroke-opacity="0.5" stroke-width="9" stroke-linecap="round"/>
+    <path d="M701 244L684 278" stroke="#136BFF" stroke-opacity="0.5" stroke-width="9" stroke-linecap="round"/>
+  </g>
+
+  <g filter="url(#glow)">
+    <path d="M270 394C390 299 525 278 675 306C770 324 838 315 884 252C869 333 798 386 697 396C563 410 432 371 270 394Z" fill="#071633" stroke="#020A1F" stroke-width="5"/>
+    <path d="M270 410C423 356 566 366 696 397C782 418 858 399 884 282C858 378 785 452 676 456C547 461 419 407 270 410Z" fill="url(#swipe)"/>
+    <path d="M294 452C430 377 548 392 683 421C774 440 839 393 863 331C841 435 759 503 638 492C514 481 406 435 294 452Z" fill="#005DFF" opacity="0.88"/>
+    <path d="M402 405C502 386 586 407 671 426C737 441 792 424 834 378C783 464 700 473 605 449C529 430 461 411 402 405Z" fill="#FFFFFF"/>
+  </g>
+
+  <g fill="#FFFFFF">
+    <circle cx="466" cy="356" r="4"/>
+    <circle cx="489" cy="348" r="2.8"/>
+    <circle cx="521" cy="342" r="3.5"/>
+    <circle cx="557" cy="430" r="4.5"/>
+    <circle cx="590" cy="448" r="7"/>
+    <circle cx="627" cy="436" r="3.8"/>
+    <circle cx="660" cy="419" r="5"/>
+    <circle cx="696" cy="407" r="3"/>
+    <circle cx="720" cy="396" r="2.5"/>
+    <circle cx="742" cy="374" r="2.8"/>
+  </g>
+
+  <g fill="#071633">
+    <path d="M886 293L902 327L936 343L902 359L886 393L870 359L836 343L870 327L886 293Z"/>
+    <path d="M939 360L949 382L971 392L949 402L939 424L929 402L907 392L929 382L939 360Z"/>
+  </g>
+
+  <text x="600" y="626" text-anchor="middle" font-family="Inter, SF Pro Display, system-ui, sans-serif" font-size="98" font-weight="800" letter-spacing="0" fill="url(#text)" stroke="#031126" stroke-width="1.5">FlourTrack</text>
+</svg>
