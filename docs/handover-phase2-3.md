@@ -64,6 +64,22 @@ Flourtrack/
 - Combo bricht bei Miss auf 0; Streak analog.
 - Auto-Too-Slow nach ~1,2 s ohne Tap (accuracyMs 1500).
 
+## Korrektur Spielkonzept (offen — Produktvision, 2026-08-09)
+
+Das aktuell umgesetzte Tap-Konzept (Countdown → bei 0 „JETZT TIPPEN" → Tippen irgendwo zum Timing) entspricht **nicht** der eigentlichen Produktvision. Es ist ein Platzhalter und muss in der nächsten Iteration überarbeitet werden.
+
+Gewollte Mechanik (Alex):
+1. Countdown läuft ab (5→0).
+2. Bei 0 erscheint eine sichtbare **Mehls pur** („flour trail") auf dem Display.
+3. Der Spieler muss diese Mehls pur **„wegsnieffen"** — Sniff-/Wisch-Geste über die Spur, kein einfacher Tap.
+
+Daraus folgt für den nächsten Durchlauf:
+- `GameView`-Tap-Fläche und `GameViewModel.tap()` werden durch eine Mehls pur-Mechanik ersetzt (sichtbare Spur + Gestenerkennung statt Touch-Down-Tap).
+- Scoring/Timing auf die Geste umstellen (u. a. anhand Geste-Vollständigkeit/-Länge statt reinem Touch-Zeitpunkt).
+- `Views/Components/FlourSwipe.swift` und `FlourSparkles.swift` sind ein Startpunkt für die visuelle Spur.
+
+Die in PR #1 enthaltenen Tap-Timing-/Touch-Down-Fixes sind trotzdem korrekt für den aktuellen Platzhalter-Stand und bleiben als Zwischenstand; die Mehls pur-Mechanik ersetzt sie anschließend.
+
 ## Achievements
 
 5 echte lokale Trigger: `rookie_baker` (1 Spiel), `millisecond_master` (1× Perfect), `flour_power` (Combo ≥5), `precision_machine` (3 Perfects in Folge via `lastPerfectsInARow`), `early_bird` (vor 08:00 Uhr spielen). `around_the_world` bewusst **deferred** (braucht MapKit / Year-in-Swipe).
@@ -81,7 +97,7 @@ xcodebuild -project Flourtrack.xcodeproj -scheme Flourtrack \
 
 **Aufs echte iPhone (free Personal-Team-Provisioning, nur Xcode-GUI):**
 
-CLI kann **kein** free Provisioning erzeugen („No Account for Team" / „No profiles for app.flourtrack"). Team `RFZ5FCPC5Q` ist im pbxproj hinterlegt (Automatic Signing).
+CLI kann **kein** free Provisioning erzeugen („No Account for Team" / „No profiles for app.flourtrack"). Team `GTTK5JST32` ist im pbxproj hinterlegt (Automatic Signing).
 
 1. Xcode (Xcode-beta) → Settings → Accounts → „+" → Apple ID → `arn0ld816@icloud.com`.
 2. Target *Flourtrack* → Signing & Capabilities → Automatically manage Signing, Team = Personal Team.

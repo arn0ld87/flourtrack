@@ -7,7 +7,13 @@ struct GameView: View {
         ZStack {
             Color.clear
                 .contentShape(Rectangle())
-                .onTapGesture { vm.tap() }
+                // Touch-Down statt Tap-Release erfassen: sonst wandert die Press-Dauer in accuracyMs
+                // und ein früh aufgesetzter, bei 0 losgelassener Finger löst keinen Early-Miss aus (Codex P1).
+                .gesture(DragGesture(minimumDistance: 0).onChanged { _ in vm.tap() })
+                .accessibilityElement()
+                .accessibilityLabel(vm.phase == .waitingTap ? "Jetzt tippen" : "Spielfläche")
+                .accessibilityAddTraits(.isButton)
+                .accessibilityAction { vm.tap() }
 
             VStack(spacing: 24) {
                 Spacer()
