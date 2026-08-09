@@ -72,6 +72,9 @@ final class GameViewModel: ObservableObject {
             countdownTimer?.invalidate()
             countdownValue = 0
             phase = .waitingTap
+            // Eigenes Cue bei 0 — die Zähl-Cues (displayed > 0) erreichen diesen Zeitpunkt nicht (Codex P2).
+            haptics.playTone(frequency: 880, duration: 0.25)
+            haptics.playTick()
             scheduleTooSlowFallback()
         }
     }
@@ -89,14 +92,18 @@ final class GameViewModel: ObservableObject {
 
     func tap() {
         switch phase {
-        case .counting:
+        case .counting, .waitingTap:
             guard let zero = zeroTime else { return }
-            let earlyMs = Int(max(0, zero.timeIntervalSinceNow) * 1000)
-            finalize(accuracyMs: max(1, earlyMs), rating: .tooEarly)
-        case .waitingTap:
-            guard let zero = zeroTime else { return }
-            let lateMs = Int(max(0, -zero.timeIntervalSinceNow) * 1000)
-            finalize(accuracyMs: lateMs, rating: Rating.from(accuracyMs: lateMs))
+            // Bewertung aus der vorzeichenbehafteten Differenz zu zeroTime, nicht aus der
+            // per 100-ms-Tick aktualisierten phase — sonst wird ein Tap bei/nach 0, der vor
+            // dem nächsten Tick ankommt, fälschlich als .tooEarly gewertet (Codex P1/CodeRabbit).
+            let delta = Date.now.timeIntervalSince(zero)
+            if delta < 0 {
+                finalize(accuracyMs: max(1, Int(-delta * 1000)), rating: .tooEarly)
+            } else {
+                let lateMs = Int(delta * 1000)
+                finalize(accuracyMs: lateMs, rating: Rating.from(accuracyMs: lateMs))
+            }
         default:
             break
         }

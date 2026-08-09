@@ -5,9 +5,67 @@ struct SettingsView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.hapticAudio) private var haptics
     @State private var profile: PlayerProfile?
+    @StateObject private var authService = AuthService()
+    @StateObject private var syncEngine = SyncEngine()
 
     var body: some View {
         Form {
+            Section("Account") {
+                if authService.isAuthenticated {
+                    HStack {
+                        Image(systemName: "person.circle.fill")
+                            .font(.title2)
+                            .foregroundStyle(.green)
+                        VStack(alignment: .leading) {
+                            Text("Verbunden")
+                                .font(.headline)
+                            if let publicId = KeychainTokenStore.publicUserId() {
+                                Text(publicId)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(1)
+                            }
+                        }
+                        Spacer()
+                        Button("Abmelden") {
+                            authService.logout()
+                        }
+                        .font(.caption)
+                        .buttonStyle(.borderless)
+                    }
+
+                    if syncEngine.pendingCount > 0 {
+                        HStack {
+                            Text("Ausstehende Uploads")
+                            Spacer()
+                            Text("\(syncEngine.pendingCount)")
+                                .foregroundStyle(.orange)
+                                .font(.headline)
+                        }
+                    }
+
+                    if syncEngine.isSyncing {
+                        HStack {
+                            Text("Synchronisiere...")
+                            Spacer()
+                            ProgressView()
+                                .scaleEffect(0.8)
+                        }
+                    } else if syncEngine.lastSyncError != nil {
+                        Button("Synchronisierung wiederholen") {
+                            Task {
+                                await syncEngine.flushQueue(context: context)
+                            }
+                        }
+                    }
+                } else {
+                    Button("Anmelden") {
+                        // Navigiere zu AuthView
+                    }
+                    .foregroundStyle(.blue)
+                }
+            }
+
             Section("Profil") {
                 TextField("Name", text: nameBinding)
             }
@@ -21,6 +79,9 @@ struct SettingsView: View {
         }
         .navigationTitle("Einstellungen")
         .task { await load() }
+        .onAppear {
+            syncEngine.refreshPendingCount(context: context)
+        }
     }
 
     private var nameBinding: Binding<String> {

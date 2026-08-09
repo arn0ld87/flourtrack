@@ -1,0 +1,543 @@
+openapi: 3.1.0
+info:
+  title: FlourTrack API
+  version: "0.2.0"
+  description: |
+    Phase 4 API for FlourTrack. Offline-first iOS client, REST backend.
+    Auth: Apple Sign In + Guest/Anonymous, JWT session tokens.
+    Sync: Outbox-Queue on iOS, idempotent POST /games via client_game_id.
+  contact:
+    name: FlourTrack Dev
+    url: https://github.com/arn0ld87/flourtrack
+
+servers:
+  - url: http://localhost:8080
+    description: Local development (Mac Docker)
+  - url: https://api.flourtrack.app
+    description: Production
+
+security:
+  - BearerAuth: []
+
+paths:
+  # ─── Health ─────────────────────────────────────────────────────────────
+  /health/live:
+    get:
+      summary: Liveness check
+      description: Returns 200 if the backend process is running.
+      security: []
+      responses:
+        "200":
+          description: Backend is alive
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LiveHealth"
+
+  /health/ready:
+    get:
+      summary: Readiness check
+      description: Returns 200 if PostgreSQL and Redis are reachable.
+      security: []
+      responses:
+        "200":
+          description: Backend is ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadyHealth"
+        "503":
+          description: A dependency is not ready
+
+  # ─── Auth ───────────────────────────────────────────────────────────────
+  /auth/guest:
+    post:
+      summary: Create or resume a guest account
+      description: |
+        Creates a new guest user and returns a JWT. If called with an existing
+        `Authorization` header, returns the same guest identity (token refresh).
+      security: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GuestAuthRequest"
+      responses:
+        "200":
+          description: Guest session created or refreshed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "201":
+          description: New guest account created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+
+  /auth/apple:
+    post:
+      summary: Sign in with Apple
+      description: |
+        Verifies an Apple Identity Token. Links to existing guest account if
+        `guest_token` is provided, otherwise creates a new user.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppleAuthRequest"
+      responses:
+        "200":
+          description: Apple sign-in successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Invalid Apple token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Apple account already linked to another user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ─── Games ──────────────────────────────────────────────────────────────
+  /games:
+    post:
+      summary: Submit a game attempt
+      description: |
+        Idempotent via `client_game_id`. The same payload with the same
+        `client_game_id` will return the stored game on retry (no duplicate).
+        Requires `Authorization: Bearer <jwt>` header.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateGameRequest"
+      responses:
+        "201":
+          description: Game stored successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Game"
+        "200":
+          description: Game already stored (idempotent retry)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Game"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Missing or invalid JWT
+
+    get:
+      summary: List game history
+      description: |
+        Cursor-based pagination. Use `next_cursor` from response for subsequent
+        pages. Default page size: 20. Sorted by `played_at` descending.
+      parameters:
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Opaque cursor from previous response
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Page size
+      responses:
+        "200":
+          description: Paginated game list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GameList"
+        "401":
+          description: Missing or invalid JWT
+
+  /games/{game_id}:
+    get:
+      summary: Get a single game
+      description: Retrieve a specific game attempt by its server-side ID.
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Game found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Game"
+        "404":
+          description: Game not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Missing or invalid JWT
+
+  # ─── Profile ────────────────────────────────────────────────────────────
+  /profile/me:
+    get:
+      summary: Get current user profile
+      responses:
+        "200":
+          description: Profile data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+        "401":
+          description: Missing or invalid JWT
+
+    patch:
+      summary: Update current user profile
+      description: Partial update. Only provided fields are changed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileUpdate"
+      responses:
+        "200":
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Missing or invalid JWT
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT session token from /auth/guest or /auth/apple
+
+  schemas:
+    # ─── Health ───────────────────────────────────────────────────────────
+    LiveHealth:
+      type: object
+      required: [status, service]
+      properties:
+        status:
+          type: string
+          const: ok
+        service:
+          type: string
+          const: flourtrack-backend
+
+    ReadyHealth:
+      type: object
+      required: [status, postgres, redis]
+      properties:
+        status:
+          type: string
+          const: ready
+        postgres:
+          type: string
+          enum: [ok, error]
+        redis:
+          type: string
+          enum: [ok, error]
+
+    # ─── Auth ────────────────────────────────────────────────────────────
+    GuestAuthRequest:
+      type: object
+      properties:
+        display_name:
+          type: string
+          minLength: 2
+          maxLength: 32
+          nullable: true
+          description: Optional initial display name
+
+    AppleAuthRequest:
+      type: object
+      required: [identity_token, authorization_code]
+      properties:
+        identity_token:
+          type: string
+          description: Apple JWT identity token from ASAuthorizationAppleIDCredential
+        authorization_code:
+          type: string
+          description: Authorization code from Apple (for server validation)
+        guest_token:
+          type: string
+          nullable: true
+          description: Existing guest JWT to link Apple account to
+
+    AuthResponse:
+      type: object
+      required: [token, token_type, expires_in, user]
+      properties:
+        token:
+          type: string
+          description: JWT session token
+        token_type:
+          type: string
+          const: Bearer
+        expires_in:
+          type: integer
+          description: Token lifetime in seconds (e.g. 604800 = 7 days)
+        user:
+          $ref: "#/components/schemas/User"
+
+    User:
+      type: object
+      required: [id, public_user_id, account_provider, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        public_user_id:
+          type: string
+          pattern: "^ft_[a-zA-Z0-9]{12,40}$"
+          description: Public-facing user identifier
+        account_provider:
+          type: string
+          enum: [guest, apple]
+        display_name:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    # ─── Games ────────────────────────────────────────────────────────────
+    CreateGameRequest:
+      type: object
+      required:
+        - client_game_id
+        - reaction_time_ms
+        - rating
+        - accuracy_score
+        - combo_multiplier
+        - total_score
+        - played_at
+      properties:
+        client_game_id:
+          type: string
+          format: uuid
+          description: Client-generated UUID for idempotency
+        reaction_time_ms:
+          type: integer
+          minimum: 0
+          description: Reaction time in milliseconds
+        rating:
+          type: string
+          enum: [perfect, excellent, good, okay, too_slow, too_early]
+          description: Performance rating
+        accuracy_score:
+          type: integer
+          minimum: 0
+          maximum: 1000
+          description: Base score before combo multiplier
+        combo_multiplier:
+          type: number
+          format: decimal
+          minimum: 1.0
+          description: Combo multiplier applied to base score
+        total_score:
+          type: integer
+          minimum: 0
+          description: Final score after multiplier
+        virtual_line_count:
+          type: number
+          format: decimal
+          nullable: true
+          default: 1.0
+        virtual_distance_meters:
+          type: number
+          format: decimal
+          nullable: true
+          default: 0
+        played_at:
+          type: string
+          format: date-time
+          description: When the game was played (client time, UTC)
+        metadata:
+          type: object
+          nullable: true
+          description: Free-form JSON for extensibility
+
+    Game:
+      type: object
+      required:
+        - id
+        - client_game_id
+        - reaction_time_ms
+        - rating
+        - accuracy_score
+        - combo_multiplier
+        - total_score
+        - played_at
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        client_game_id:
+          type: string
+          format: uuid
+        reaction_time_ms:
+          type: integer
+        rating:
+          type: string
+          enum: [perfect, excellent, good, okay, too_slow, too_early]
+        accuracy_score:
+          type: integer
+        combo_multiplier:
+          type: number
+          format: decimal
+        total_score:
+          type: integer
+        virtual_line_count:
+          type: number
+          format: decimal
+        virtual_distance_meters:
+          type: number
+          format: decimal
+        played_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        synced_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    GameList:
+      type: object
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Game"
+        pagination:
+          type: object
+          required: [has_more]
+          properties:
+            next_cursor:
+              type: string
+              nullable: true
+              description: Opaque cursor for next page. Null if no more pages.
+            has_more:
+              type: boolean
+
+    # ─── Profile ──────────────────────────────────────────────────────────
+    Profile:
+      type: object
+      required: [id, public_user_id, account_provider, display_name, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        public_user_id:
+          type: string
+        account_provider:
+          type: string
+          enum: [guest, apple]
+        display_name:
+          type: string
+          nullable: true
+        avatar_url:
+          type: string
+          nullable: true
+        flour_track_factor:
+          type: number
+          format: decimal
+          default: 1.0
+        origin_city_name:
+          type: string
+          nullable: true
+        origin_latitude:
+          type: number
+          format: decimal
+          nullable: true
+        origin_longitude:
+          type: number
+          format: decimal
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ProfileUpdate:
+      type: object
+      properties:
+        display_name:
+          type: string
+          minLength: 2
+          maxLength: 32
+          nullable: true
+        origin_city_name:
+          type: string
+          nullable: true
+        origin_latitude:
+          type: number
+          format: decimal
+          nullable: true
+        origin_longitude:
+          type: number
+          format: decimal
+          nullable: true
+
+    # ─── Errors ────────────────────────────────────────────────────────────
+    ErrorResponse:
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
+          description: Machine-readable error code
+        message:
+          type: string
+          description: Human-readable error description
+        details:
+          type: object
+          nullable: true
+          description: Additional error context (validation fields, etc.)

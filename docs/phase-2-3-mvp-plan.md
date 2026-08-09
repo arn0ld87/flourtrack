@@ -32,7 +32,7 @@ Ziel: Spielbarer Offline-MVP, der auf einem echten iPhone läuft.
 
 ## Ordnerstruktur (unter `Flourtrack/`)
 
-```
+```text
 Flourtrack/
 ├── App/
 │   └── FlourTrackApp.swift          @main, TabView
@@ -69,6 +69,7 @@ Flourtrack/
 ## SwiftData-Schema
 
 ### GameAttempt
+
 - `id: UUID` (client_game_id, idempotent für späteren Sync)
 - `score: Int`
 - `accuracyMs: Int` (|Δ| zum Tap-Zeitpunkt)
@@ -79,12 +80,14 @@ Flourtrack/
 - `createdAt: Date`
 
 ### PlayerProfile
+
 - `id: UUID`
 - `displayName: String`
 - `hapticsEnabled: Bool` (default true)
 - `audioEnabled: Bool` (default true)
 
 ### LocalAchievement
+
 - `id: UUID`
 - `code: String` (z. B. `rookie_baker`)
 - `unlockedAt: Date?` (nil = gesperrt/deferred)
